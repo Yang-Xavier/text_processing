@@ -18,6 +18,11 @@ class Retrieve:
             'TFIDF' : 'tfidf'
         }
     # Method performing retrieval for specified query
+        uniq_docid = []
+        for term in index:
+            uniq_docid.extend(index[term].keys())
+        uniq_docid = list(set(uniq_docid))
+
 
     def forQuery(self, query):
         # query is the index of query keywords
@@ -76,12 +81,10 @@ class Retrieve:
     def format_data(self,query):
         # format the matrix of relevant document and query using pandas data structure
         relevant_docid = []
-        relevant_doc = {}
         for term in query:
             if term in self.index:
-                relevant_doc[term] = self.index[term]
                 relevant_docid.extend(self.index[term].keys())
-        relevant_docid = np.unique(relevant_docid).tolist()
+        relevant_docid = list(set(relevant_docid))
         relevant_doc_vec = pd.DataFrame(data = np.zeros((len(relevant_docid), len(query.keys()))).tolist(), index =relevant_docid, columns = query.keys() )
         query_vec = pd.DataFrame( data = np.zeros((1, len(query.keys()))).tolist(),  columns = query.keys())
         return relevant_doc_vec, query_vec
