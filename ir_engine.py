@@ -14,7 +14,7 @@ OPTIONS:
 # Importing
 
 import sys, getopt, re, time
-from my_retriever import Retrieve
+from my_retriever_old import Retrieve
 
 #==============================================================================
 # Command line processing
