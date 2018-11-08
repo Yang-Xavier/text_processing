@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 
 class Retrieve:
     # Create new Retrieve object storing index and termWeighting scheme
@@ -12,93 +11,139 @@ class Retrieve:
     # binary (0,1),
     # tf (Frequency of term in document),
     # tfidf (Frequency in document vs in collection)
-        self.query_type = {
-            'BINARY': 'binary',
-            'TF':'tf',
-            'TFIDF' : 'tfidf'
-        }
     # Method performing retrieval for specified query
-        uniq_docid = []
+        total_doc = []
         for term in index:
-            uniq_docid.extend(index[term].keys())
-        uniq_docid = list(set(uniq_docid))
+            total_doc.extend(index[term])
+        self.D = len(list(set(total_doc))) + 1
 
 
     def forQuery(self, query):
         # query is the index of query keywords
-        # e.g. {a: tf....}
-        relevant_doc, query_data = self.format_data(query)
-        if self.termWeighting == self.query_type['BINARY']:
-            results = self.binary_query(query, relevant_doc, query_data)
-        elif self.termWeighting == self.query_type['TF']:
-            results = self.tf_query(query, relevant_doc, query_data)
-        elif self.termWeighting == self.query_type['TFIDF']:
-            results = self.tfidf_query(query, relevant_doc, query_data)
-        return results.iloc[:10].index.tolist()
+        # e.g. {a: 1....}
+        if self.termWeighting == "binary":
+            top_ten = self.binary(query)
 
-    def  binary_query(self, query, relevant_doc, query_data):
-        query_data.iloc[0] = 1. # set value for query
-        for term in query: # set value for doc
-            if term not in self.index:
-                relevant_doc[term] = 0.
-                continue
-            relevant_doc[term].loc[self.index[term].keys()] = 1.
-        results = self.calcul_similar(query_data, relevant_doc)
-        return results
+        if self.termWeighting == "tf":
+            top_ten = self.tf(query)
 
-    def tf_query(self,query, relevant_doc, query_data):
-        for term in query:
-            query_data[term] = query[term]
-            if term not in self.index:
-                relevant_doc[term] = 0.
-                continue
-            relevant_doc[term].loc[self.index[term].keys()] = [self.index[term][k] for k in self.index[term]]
-        results = self.calcul_similar(query_data, relevant_doc)
-        return results
+        if self.termWeighting == "tfidf":
+            top_ten = self.tf_idf(query)
 
-    def tfidf_query(self,query, relevant_doc, query_data):
-        for term in query:
-            query_data[term] = query[term]
-            if term not in self.index:
-                relevant_doc[term] = 0.
-                continue
-            relevant_doc[term].loc[list(self.index[term].keys())] = [self.index[term][k] for k in self.index[term]]
-        # in above calculating the times of each query word in document collection and query module
-        d = []
-        for k in self.index:
-            d.extend(self.index[k])
-        d = np.unique(d)    # D = d   |D| = d.shape[0]
-        for term in query:
-            if term not in self.index:
-                continue
-            df = (relevant_doc[term]>0).sum() + 1 #  the word is also in query module
-            idf = np.log10(d.shape[0]/df)
-            query_data[term] = query_data[term]*idf
-            relevant_doc[term] = relevant_doc[term]*idf
-        results = self.calcul_similar(query_data,relevant_doc)
-        return results
+        # top_ten = self.all_method(query)
 
-    def format_data(self,query):
-        # format the matrix of relevant document and query using pandas data structure
-        relevant_docid = []
+        return top_ten
+
+    def binary(self,query):
+        relavent_docid, weight_doc, query_vec, df = self.formate_data(query)
+        i_term = 0
         for term in query:
+            query_vec[i_term] = 1
+            i_doc = 0
             if term in self.index:
-                relevant_docid.extend(self.index[term].keys())
-        relevant_docid = list(set(relevant_docid))
-        relevant_doc_vec = pd.DataFrame(data = np.zeros((len(relevant_docid), len(query.keys()))).tolist(), index =relevant_docid, columns = query.keys() )
-        query_vec = pd.DataFrame( data = np.zeros((1, len(query.keys()))).tolist(),  columns = query.keys())
-        return relevant_doc_vec, query_vec
+                for docid in relavent_docid:
+                    weight_doc[i_doc][i_term] = 1 if docid in self.index[term] else 0
+                    i_doc += 1
+            i_term += 1
+        index = self.calculate(weight_doc, query_vec)
+        return relavent_docid[index[-10:]]
 
-    def calcul_similar(self, query_data, document_data):
-        query = np.asarray(query_data.loc[0].tolist())
-        results = pd.DataFrame(data = np.zeros((document_data.shape[0],1)), index = document_data.index)
-        for k in document_data.index:
-            doc = np.asarray(document_data.loc[k].tolist())
-            result_h = (query*doc).sum()
-            result_b = np.sqrt((query**2).sum())*np.sqrt((doc**2).sum())
-            if result_b == 0:
-                result = 0
+    def tf(self,query):
+        relavent_docid, weight_doc, query_vec,df = self.formate_data(query)
+        i_term = 0
+        for term in query:
+            query_vec[i_term] = query[term]
+            i_doc = 0
+            if term in self.index:
+                for docid in relavent_docid:
+                    if docid in self.index[term]:
+                        weight_doc[i_doc][i_term] = self.index[term][docid]
+                    i_doc+=1
+            i_term+=1
+        index = self.calculate(weight_doc, query_vec)
+
+        return relavent_docid[index[-10:]]
+
+    def tf_idf(self,query):
+
+        relavent_docid, weight_doc, query_vec,df = self.formate_data(query)
+        D = self.D
+        i_term = 0
+        for term in query:
+            idf = np.log10(D/df[i_term])
+            query_vec[i_term] = query[term]*idf
+            i_doc = 0
+            if term in self.index:
+                for docid in relavent_docid:
+                    if docid in self.index[term]:
+                        weight_doc[i_doc][i_term] = self.index[term][docid]*idf
+                    i_doc+=1
+            i_term+=1
+
+        index = self.calculate(weight_doc, query_vec)
+        return relavent_docid[index[-10:]]
+
+    def all_method(self,query):
+        #  tf * idf    |D|      df
+        relavent_docid, weight_doc, query_vec, df = self.formate_data(query)
+        D = self.D
+        i_term = 0
+
+        for term in query:
+            idf = 0.
+            if self.termWeighting == "tfidf":
+                idf = np.log10(D / df[i_term])
+                query_vec[i_term] = query[term] * idf
+            if self.termWeighting == "tf":
+                query_vec[i_term] = query[term]
+            if self.termWeighting == "binary":
+                query_vec[i_term] = 1
+
+            i_doc = 0
+            if term in self.index:
+                for docid in relavent_docid:
+                    if docid in self.index[term]:
+                        if self.termWeighting == "tfidf":
+                            weight_doc[i_doc][i_term] = self.index[term][docid] * idf
+                        if self.termWeighting == "tf":
+                            weight_doc[i_doc][i_term] = self.index[term][docid]
+                        if self.termWeighting == "binary":
+                            weight_doc[i_doc][i_term] = 1 if docid in self.index[term] else 0
+                    i_doc += 1
+            i_term += 1
+
+        index = self.calculate(weight_doc, query_vec)
+        return relavent_docid[index[-10:]]
+
+    def formate_data(self,query):
+        relavent_docid = []
+        query_vec = []
+        df = []
+
+        for term in query:
+            query_vec.extend([0])
+            if term in self.index:
+                keys = self.index[term].keys()
+                relavent_docid.extend(keys)
+                df.extend([len(keys)+1])
             else:
-                result = result_h/result_b
-            results.loc[k] = result
-        return results.sort_values(by = [0], ascending=False)
+                df.extend([1])
+        query_vec = np.array(query_vec)
+        query_vec.dtype = 'float32'
+        relavent_docid = np.unique(relavent_docid)
+        weight_doc = np.zeros((relavent_docid.shape[0], query_vec.shape[0]))
+        return relavent_docid,weight_doc,query_vec,df
+
+    def calculate(self, weight_d, weight_q):
+        similarity = np.zeros(weight_d.shape[0])
+        for i in range(weight_d.shape[0]):
+            b = np.sqrt((weight_d[i]**2).sum()) * np.sqrt((weight_q**2).sum())
+            if b == 0 :
+                similarity[i] = 0
+            else:
+                similarity[i] = (weight_d[i] * weight_q).sum() / b
+        index = np.argsort(similarity)
+        return index
+
+
+

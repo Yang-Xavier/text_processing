@@ -28,12 +28,15 @@ class Retrieve:
         # query is the index of query keywords
         # e.g. {a: tf....}
         relevant_doc, query_data = self.format_data(query)
-        if self.termWeighting == self.query_type['BINARY']:
-            results = self.binary_query(query, relevant_doc, query_data)
-        elif self.termWeighting == self.query_type['TF']:
-            results = self.tf_query(query, relevant_doc, query_data)
-        elif self.termWeighting == self.query_type['TFIDF']:
-            results = self.tfidf_query(query, relevant_doc, query_data)
+        # if self.termWeighting == self.query_type['BINARY']:
+        #     results = self.binary_query(query, relevant_doc, query_data)
+        # elif self.termWeighting == self.query_type['TF']:
+        # results = self.tf_query(query, relevant_doc, query_data)
+        # elif self.termWeighting == self.query_type['TFIDF']:
+        results = self.tfidf_query(query, relevant_doc, query_data)
+        # print(results.iloc[:10])
+        # print(results.iloc[:10].index.tolist())
+        # print(results.iloc[:10].index.tolist())
         return results.iloc[:10].index.tolist()
 
     def  binary_query(self, query, relevant_doc, query_data):
@@ -67,7 +70,8 @@ class Retrieve:
         d = []
         for k in self.index:
             d.extend(self.index[k])
-        d = np.unique(d)    # D = d   |D| = d.shape[0]
+        d = np.unique(d)+1    # D = d   |D| = d.shape[0]
+        # print(d.shape[0])
         for term in query:
             if term not in self.index:
                 continue
