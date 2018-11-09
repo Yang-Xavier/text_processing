@@ -51,11 +51,11 @@ class Retrieve:
         df = []
         for term in query:
             if term in self.index:
-                keys = self.index[term].keys()
+                keys = self.index[term].keys()      #for df
                 relavent_docid.extend(keys)
-                df.extend([len(keys)+1])
+                df.extend([len(keys)+1])        # query should be regard as a document
             else:
-                df.extend([1])
+                df.extend([1])      # only in query
         relavent_docid = np.unique(relavent_docid)
         query_vec = np.zeros(len(query.keys()))
         weight_doc = np.zeros((relavent_docid.shape[0], query_vec.shape[0]))
@@ -72,6 +72,3 @@ class Retrieve:
                 similarity[i] = (weight_d[i] * weight_q).sum() / b
         index = np.argsort(similarity)
         return index
-
-
-
