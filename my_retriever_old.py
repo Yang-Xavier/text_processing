@@ -12,16 +12,19 @@ class Retrieve:
     # binary (0,1),
     # tf (Frequency of term in document),
     # tfidf (Frequency in document vs in collection)
-        self.query_type = {
-            'BINARY': 'binary',
-            'TF':'tf',
-            'TFIDF' : 'tfidf'
-        }
-    # Method performing retrieval for specified query
+
         uniq_docid = []
         for term in index:
             uniq_docid.extend(index[term].keys())
-        uniq_docid = list(set(uniq_docid))
+        uniq_docid = np.asarray(set(uniq_docid))
+
+        all_doc_vec = np.zeros((uniq_docid.shape[0], len(index.keys())))
+
+        i_term = 0
+        for term in self.index:
+
+            i_doc = 0
+            for docid in self.index:
 
 
     def forQuery(self, query):
