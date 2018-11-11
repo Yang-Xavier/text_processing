@@ -8,7 +8,7 @@ class Retrieve:
 
         total_doc = []
         for term in index:
-            total_doc.extend(index[term])
+            total_doc.extend(index[term].keys())
         self.D = len(list(set(total_doc))) + 1
 
 

@@ -172,17 +172,10 @@ if __name__ == '__main__':
 
     t = MyTimer()
     t.start('retrieval')
-    i=0
     for qid in queries.qids():
-        # i += 1
-        # if i<58 or i >58:
-        #     continue
         query = queries.getQuery(qid)
         results = retrieve.forQuery(query)
         allResults.store(qid, results)
-        # break
-        # if i == 2:
-        #     break # just loop once because of testing
     t.stopPrint('retrieval')
     allResults.output()
 

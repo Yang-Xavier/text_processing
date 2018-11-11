@@ -9,8 +9,8 @@ class Retrieve:
         total_doc_id = []
         for term in index:
             total_doc_id.extend(index[term])
-        self.D = len(list(set(total_doc_id)))
         total_doc_id = np.unique(total_doc_id)
+        self.D = total_doc_id.shape[0]
         self.all_doc_vec = np.zeros((total_doc_id.shape[0]+1, len(index.keys())))
         i_term = 0
         for term in self.index:
@@ -23,6 +23,7 @@ class Retrieve:
                 if self.termWeighting == "binary":
                     self.all_doc_vec[docid][i_term] = 1
             i_term += 1
+
     def forQuery(self, query):
         # query is the index of query keywords
         # e.g. {a: 1....}
